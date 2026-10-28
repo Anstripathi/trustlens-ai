@@ -1,0 +1,5 @@
+# Security
+**Threat model**: untrusted CSV uploads on a public, free-tier host; no accounts, no database, no secrets.
+**Controls (implemented & unit-tested unless noted)**: `.csv` only; 20 MB limit (also Streamlit `maxUploadSize`); binary sniffing; row/column caps; strict CSV parsing (never executed/eval'd; formula-like cells are inert text); serialized model files (pkl/joblib/…) rejected and never loaded; `safe_join` blocks traversal; hyperparameter/split/seed bounds; generic error messages for unexpected exceptions; no logging of data; `showErrorDetails=false`; Adult download is https-only with timeout and never raises.
+**Retention**: uploads live in the session's memory only; nothing written to disk. Streamlit Cloud storage is ephemeral.
+**Known limits**: not penetration-tested; session isolation relies on Streamlit's per-session state (not independently verified); Streamlit/XSRF settings are untested here; CSVs exported from this app's tables could contain formula-like text (no spreadsheet export is offered); resource exhaustion is bounded only by the caps above; supply-chain risk from unpinned ranges.

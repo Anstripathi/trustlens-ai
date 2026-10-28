@@ -1,0 +1,70 @@
+import json
+import pytest
+from pathlib import Path
+from src import config
+from src.artifact_manager import (dataset_fingerprint, reject_model_artifact, safe_error_message,
+                                  safe_join, save_json_report)
+from src.data_validation import ValidationError, load_csv_bytes
+from src.datasets import load_adult
+
+
+@pytest.mark.parametrize("name", ["m.pkl", "m.PICKLE", "m.joblib", "m.pt", "dir/m.h5", "x.onnx"])
+def test_model_artifacts_rejected(name):
+    with pytest.raises(ValidationError):
+        reject_model_artifact(name)
+
+
+def test_csv_not_rejected_as_artifact():
+    reject_model_artifact("data.csv")
+
+
+@pytest.mark.parametrize("name", ["../x.json", "..\\x.json", "/etc/passwd", "a/b.json", "C:\\x.json", "", "x\x00.json", ".."])
+def test_path_traversal_rejected(name, tmp_path=None):
+    with pytest.raises(ValidationError):
+        safe_join(Path("artifacts"), name)
+
+
+def test_safe_join_ok_and_report_roundtrip(tmp_path=None):
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        p = save_json_report({"a": 1}, Path(d), "r.json")
+        assert p.parent == Path(d).resolve() and json.loads(p.read_text()) == {"a": 1}
+        with pytest.raises(ValidationError):
+            save_json_report({"a": 1}, Path(d), "r.pkl")
+
+
+def test_formula_like_and_script_content_is_only_data():
+    lr = load_csv_bytes(b"a,b\n=1+1,<script>alert(1)</script>\n@SUM(1),__import__('os').system('x')\n", "t.csv")
+    assert lr.clean["b"].iloc[0] == "<script>alert(1)</script>"      # parsed as inert text
+
+
+def test_upload_limits_enforced():
+    assert config.MAX_UPLOAD_BYTES == config.MAX_UPLOAD_MB * 1024 * 1024
+    with pytest.raises(ValidationError):
+        load_csv_bytes(b"a,b\n" + b"1,2\n" * 10, "a.csv", max_bytes=10)
+
+
+def test_error_messages_do_not_leak_internals():
+    msg = safe_error_message(RuntimeError("/home/secret/path.py line 3"))
+    assert "secret" not in msg
+    assert safe_error_message(ValidationError("bad")) == "bad"
+
+
+def test_fingerprint_changes_with_content():
+    import pandas as pd
+    a = pd.DataFrame({"x": [1, 2]}); b = pd.DataFrame({"x": [1, 3]})
+    assert dataset_fingerprint(a) == dataset_fingerprint(a.copy()) != dataset_fingerprint(b)
+
+
+def test_download_refuses_non_https_and_fails_gracefully():
+    lr, msg = load_adult("http://example.com/x")
+    assert lr is None and "https" in msg
+    lr, msg = load_adult("https://invalid.invalid/adult.data", timeout=2)
+    assert lr is None and "Could not download" in msg
+
+
+def test_no_pickle_or_secrets_in_source():
+    for f in list(Path("src").glob("*.py")) + list(Path("pages").glob("*.py")) + [Path("app.py")]:
+        t = f.read_text(encoding="utf-8")
+        assert "pickle.load" not in t and "joblib.load" not in t and "eval(" not in t.replace("retrieval(", "")
+        assert "api_key" not in t.lower() and "password" not in t.lower()
