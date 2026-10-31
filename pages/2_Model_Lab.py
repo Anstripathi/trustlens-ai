@@ -55,7 +55,8 @@ if b1.button("Train model", type="primary"):
         for k in ("calibration", "ood", "conformal", "global_imp", "shap_explanation", "shap_explanation_identity",
                   "shap_comparison", "shap_comparison_identity",
                   "lime_explanation", "lime_explanation_identity", "optimization_result",
-                  "optimization_identity", "cf_result", "cf_result_identity"):
+                  "optimization_identity", "cf_result", "cf_result_identity",
+                  "model_auditor_result", "model_auditor_identity"):
             st.session_state.pop(k, None)
     except Exception as e:  # noqa: BLE001 - shown as a safe message
         show_error(e)
@@ -122,7 +123,8 @@ else:
             for key in ("calibration", "ood", "conformal", "global_imp", "shap_explanation", "shap_explanation_identity",
                         "shap_comparison", "shap_comparison_identity",
                         "lime_explanation", "lime_explanation_identity", "optimization_result", "optimization_identity",
-                        "cf_result", "cf_result_identity"):
+                        "cf_result", "cf_result_identity", "model_auditor_result",
+                        "model_auditor_identity"):
                 st.session_state.pop(key, None)
             record_activity("Optimized model selected", f"{res.config.model_name} Â· fit-only cross-validation")
             st.success("The optimized pipeline is now the active model. The held-out test results below evaluate it once.")

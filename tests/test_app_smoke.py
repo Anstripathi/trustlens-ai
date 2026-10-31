@@ -5,7 +5,8 @@ from pathlib import Path
 pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
-PAGES = ["app.py", "pages/1_Data_Explorer.py", "pages/3_Student_Marks_Demo.py"]
+PAGES = ["app.py", "pages/1_Data_Explorer.py", "pages/3_Student_Marks_Demo.py",
+         "pages/6_AI_Security.py", "pages/7_Model_Auditor.py"]
 
 
 @pytest.mark.parametrize("page", PAGES)

@@ -13,7 +13,8 @@ def set_dataset(df, raw, name: str, notes: list[str]) -> None:
               "shap_explanation", "shap_explanation_identity", "shap_comparison",
               "shap_comparison_identity", "lime_explanation",
               "lime_explanation_identity", "optimization_result", "optimization_identity",
-              "cf_result", "cf_result_identity"):
+              "cf_result", "cf_result_identity", "security_assessment",
+              "model_auditor_result", "model_auditor_identity"):
         st.session_state.pop(k, None)
     st.session_state.update(df=df, raw=raw, dataset_name=name, load_notes=notes,
                             df_fp=dataset_fingerprint(df))

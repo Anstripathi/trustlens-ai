@@ -13,6 +13,8 @@ PAGES = (
     ("Student Marks Demo", "pages/3_Student_Marks_Demo.py", "school"),
     ("Explainability", "pages/4_Explainability.py", "query_stats"),
     ("Reliability Monitor", "pages/5_Reliability_Monitor.py", "verified_user"),
+    ("AI Security", "pages/6_AI_Security.py", "shield_lock"),
+    ("Model Auditor", "pages/7_Model_Auditor.py", "policy"),
 )
 
 
@@ -26,7 +28,7 @@ def render_sidebar() -> None:
 
 
 def render_page_header(title: str, description: str, *, eyebrow: str = "TRUSTLENS AI") -> None:
-    """Render a consistent, quiet page heading across the five modules."""
+    """Render a consistent, quiet page heading across application modules."""
     st.caption(eyebrow)
     st.title(title)
     st.caption(description)
