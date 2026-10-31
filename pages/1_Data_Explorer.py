@@ -7,10 +7,12 @@ from src.data_validation import ValidationError, load_csv_bytes
 from src.artifact_manager import dataset_fingerprint, reject_model_artifact
 from src.datasets import load_adult, make_demo_classification
 from src.data_validation import validate_loaded
+from src.theme import render_page_header, render_sidebar
 from src.ui import set_dataset, show_error
 
-st.set_page_config(page_title="Data Explorer", layout="wide")
-st.title("📊 Data Explorer")
+st.set_page_config(page_title="Data Explorer", page_icon=":material/table_chart:", layout="wide")
+render_sidebar()
+render_page_header("Data Explorer", "Inspect dataset quality, structure and potential modeling risks.")
 
 up = st.file_uploader(f"Upload a CSV (max {config.MAX_UPLOAD_MB} MB)", type=None)
 c1, c2 = st.columns(2)

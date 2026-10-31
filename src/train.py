@@ -172,11 +172,34 @@ def compare_models(df: pd.DataFrame, cfg: TrainConfig) -> pd.DataFrame:
     The test set is intentionally not used, so choosing a model from this table does not leak test labels.
     """
     from .evaluate import evaluate  # local import to avoid cycle
+    from time import perf_counter
+
     rows = []
     for name in MODELS_BY_TASK[cfg.task]:
         c = TrainConfig(**{**cfg.__dict__, "model_name": name, "hyperparams": {}})
+        train_start = perf_counter()
         res = train_model(df, c)
+        fit_seconds = perf_counter() - train_start
+        predict_start = perf_counter()
+        res.pipeline.predict(res.X_cal)
+        predict_seconds = perf_counter() - predict_start
         m = evaluate(res.pipeline, res.X_cal, res.y_cal, res.task)
-        key = ("f1", "accuracy") if res.task == "classification" else ("rmse", "r2")
-        rows.append({"model": name, **{k: m[k] for k in key}})
+        key = ("accuracy", "precision", "recall", "f1", "roc_auc", "confusion_matrix") \
+            if res.task == "classification" else ("mae", "mse", "rmse", "r2")
+        estimator = res.pipeline.named_steps["model"]
+        if hasattr(estimator, "estimators_"):
+            complexity = int(sum(tree.tree_.node_count for tree in estimator.estimators_))
+            complexity_unit = "tree nodes"
+        elif hasattr(estimator, "tree_"):
+            complexity = int(estimator.tree_.node_count)
+            complexity_unit = "tree nodes"
+        elif hasattr(estimator, "coef_"):
+            complexity = int(np.count_nonzero(estimator.coef_))
+            complexity_unit = "non-zero coefficients"
+        else:
+            complexity, complexity_unit = None, "unavailable"
+        rows.append({"model": name, **{k: m[k] for k in key},
+                     "fit_seconds": fit_seconds,
+                     "predict_ms_per_row": predict_seconds * 1000 / max(1, len(res.X_cal)),
+                     "complexity": complexity, "complexity_unit": complexity_unit})
     return pd.DataFrame(rows).set_index("model")

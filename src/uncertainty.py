@@ -9,6 +9,9 @@ from sklearn.ensemble import IsolationForest
 
 from . import config
 
+MAX_OOD_FIT_ROWS = 10_000
+MAX_OOD_CAL_ROWS = 10_000
+
 
 def conformal_quantile(cal_residuals, alpha: float) -> float | None:
     r = np.sort(np.abs(np.asarray(cal_residuals, float)))
@@ -52,11 +55,19 @@ class OODDetector:
 
     def fit(self, result):
         prep = result.pipeline.named_steps["prep"]
-        Z_fit = prep.transform(result.X_fit)
+        X_fit = result.X_fit
+        X_cal = result.X_cal
+        if len(X_fit) > MAX_OOD_FIT_ROWS:
+            X_fit = X_fit.sample(MAX_OOD_FIT_ROWS, random_state=self.seed)
+        if len(X_cal) > MAX_OOD_CAL_ROWS:
+            X_cal = X_cal.sample(MAX_OOD_CAL_ROWS, random_state=self.seed)
+        Z_fit = prep.transform(X_fit)
         self.prep_ = prep
         self.forest_ = IsolationForest(n_estimators=100, random_state=self.seed).fit(Z_fit)
-        s_cal = self.forest_.score_samples(prep.transform(result.X_cal))
+        s_cal = self.forest_.score_samples(prep.transform(X_cal))
         self.threshold_ = float(np.quantile(s_cal, self.flag_rate))
+        self.n_fit_ = len(X_fit)
+        self.n_cal_ = len(X_cal)
         return self
 
     def score(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -64,7 +75,8 @@ class OODDetector:
         return pd.DataFrame({"ood_score": s, "is_out_of_distribution": s < self.threshold_}, index=X.index)
 
     notes = ("An out-of-distribution flag means the input is unusual compared with training data; "
-             "it does not prove the prediction is wrong, and an unflagged input is not guaranteed reliable.")
+             "it does not prove the prediction is wrong, and an unflagged input is not guaranteed reliable. "
+             "Fit and threshold calibration use deterministic samples of at most 10,000 rows each.")
 
 
 def fit_ood(result, flag_rate: float = config.DEFAULT_OOD_FLAG_RATE) -> OODDetector:

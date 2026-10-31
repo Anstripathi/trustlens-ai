@@ -4,14 +4,20 @@ from __future__ import annotations
 import streamlit as st
 
 from .artifact_manager import dataset_fingerprint, safe_error_message
+from .theme import record_activity
 
 
 def set_dataset(df, raw, name: str, notes: list[str]) -> None:
     """Store a dataset and drop any results derived from a previous dataset."""
-    for k in ("result", "model_data_fp", "compare", "calibration", "ood", "conformal"):
+    for k in ("result", "model_data_fp", "compare", "global_imp", "calibration", "ood", "conformal",
+              "shap_explanation", "shap_explanation_identity", "shap_comparison",
+              "shap_comparison_identity", "lime_explanation",
+              "lime_explanation_identity", "optimization_result", "optimization_identity",
+              "cf_result", "cf_result_identity"):
         st.session_state.pop(k, None)
     st.session_state.update(df=df, raw=raw, dataset_name=name, load_notes=notes,
                             df_fp=dataset_fingerprint(df))
+    record_activity("Dataset loaded", f"{name} · {df.shape[0]:,} rows × {df.shape[1]:,} columns")
 
 
 def require_dataset():

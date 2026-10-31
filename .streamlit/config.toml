@@ -8,3 +8,30 @@ gatherUsageStats = false
 
 [client]
 showErrorDetails = false
+
+[theme]
+base = "dark"
+primaryColor = "#6685FF"
+backgroundColor = "#0B1020"
+secondaryBackgroundColor = "#121A2B"
+textColor = "#E7ECF5"
+linkColor = "#9AAEFF"
+borderColor = "#29344A"
+font = "sans-serif"
+headingFont = "sans-serif"
+baseFontSize = 15
+baseRadius = "0.65rem"
+buttonRadius = "0.55rem"
+showWidgetBorder = true
+showSidebarBorder = true
+paddingTop = "2rem"
+paddingBottom = "2.5rem"
+chartCategoricalColors = ["#6685FF", "#9B7BFF", "#35C998", "#FFBE5C", "#FF6F7D"]
+
+[theme.sidebar]
+backgroundColor = "#0E1525"
+secondaryBackgroundColor = "#151F32"
+textColor = "#E7ECF5"
+linkColor = "#A7B6FF"
+borderColor = "#29344A"
+primaryColor = "#8096FF"

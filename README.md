@@ -1,46 +1,43 @@
-# TrustLens AI — Explainable and Reliable ML Platform
+# TrustLens AI
 
-A Streamlit app for tabular data: inspect data quality, train classification/regression models with
-leakage-safe evaluation, explain predictions, assess reliability, and compare datasets for drift.
-It does **not** certify any model as trustworthy, unbiased, causal or production-ready.
+TrustLens AI is a Streamlit platform for tabular model evaluation, explainability, and reliability analysis. It supports classification and regression while keeping datasets in the app session. It does not certify models as trustworthy, fair, causal, or production-ready.
 
-## Status (honest summary)
-| Area | State |
-|---|---|
-| Core logic in `src/` (validation, profiling, training, metrics, explanations, calibration, conformal intervals, OOD, drift, student demo) | Implemented; **100 test checks pass** locally (see docs/TESTING.md) |
-| Streamlit pages | Implemented; logic exercised against a stub of `streamlit`; **never run in a real Streamlit server by the author of this build** — run it yourself and report problems |
-| SHAP | **Not implemented.** Permutation importance (global) + baseline-substitution attribution (local) are used |
-| UCI Adult download | Implemented, **untested** (no network in build env) |
-| GitHub Actions workflow | Written, **has not run** |
-| Deployment to Streamlit Community Cloud | **Not done** — needs your GitHub account (steps below). No live URL exists |
-| Screenshots / benchmark numbers | None included |
+## Capabilities
 
-## Features
-- **Data Explorer**: strict CSV parsing, size/type limits, missing tokens (`?`, empty…), duplicates, constant & identifier columns, leakage heuristics, correlation, class distribution.
-- **Model Lab**: Logistic/Linear Regression, Decision Tree, Random Forest; fit / validation / test split (stratified when possible); preprocessing fit on the fit split only; metrics on the test split; model comparison on the validation split only.
-- **Explainability**: permutation importance on original columns; local attribution by baseline substitution; causal caveat everywhere.
-- **Reliability Monitor**: confidence warnings, binary calibration (sigmoid/isotonic fit on the validation split), reliability diagram, Brier/ECE, split-conformal regression intervals, Isolation-Forest OOD flag, and **data drift** (KS / chi-square, BH or Bonferroni, effect-size thresholds).
-- **Student Marks Demo**: linear regression on a *synthetic* dataset with held-out metrics and extrapolation warnings.
+- **Data Explorer**: strict CSV validation, profiling, missingness, duplicates, correlations, and target/leakage hints.
+- **Model Lab**: Logistic/Linear Regression, Decision Tree, and Random Forest with fit/calibration/test separation, validation model comparison, performance timings, complexity indicators, and bounded cross-validated hyperparameter search.
+- **Explainability**: global and local permutation SHAP, LIME local approximations, bounded counterfactual scenarios, and retained permutation-importance/baseline-substitution methods.
+- **Reliability Monitor**: binary and multiclass calibration, reliability diagrams, Brier/ECE, raw probability distributions, entropy-based prediction ambiguity, conformal regression intervals, Isolation Forest OOD flags, and dataset drift.
+- **Student Marks Demo**: synthetic educational dataset and held-out model metrics; no interactive marks prediction.
 
-## Setup (Windows / PowerShell)
+## Verification
+
+The Milestone 2 local suite completed with **144 passed, 4 warnings**. `pip check` found no broken requirements. Versions and limitations are recorded in [docs/TESTING.md](./docs/TESTING.md). SHAP/LIME/counterfactual/optimization methods and their assumptions are documented in [docs/METHODOLOGY.md](./docs/METHODOLOGY.md).
+
+## Run locally (Windows / PowerShell)
+
 ```powershell
 py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1      # if blocked: Set-ExecutionPolicy -Scope Process Bypass
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements-dev.txt
-python -m pytest
+python -m pytest -v
+python -m pip check
 streamlit run app.py
 ```
-No Docker, no paid services, no API keys.
 
-## Deploy to Streamlit Community Cloud (manual steps for you)
-1. Create a GitHub repo and push this folder (`git init; git add .; git commit -m "TrustLens AI"; git remote add origin <url>; git push -u origin main`).
-2. Go to https://share.streamlit.io → *New app* → pick the repo, branch `main`, main file `app.py`; choose Python 3.11 in *Advanced settings*. No secrets needed.
-3. Read the deploy logs; open the URL; run the smoke list in docs/TESTING.md. Only then record the URL here.
+The app uses local Python packages only. It does not transmit datasets to external APIs and does not require Docker, a paid API, or an external database. SHAP and LIME add dependency weight; LIME's package declares scikit-image even though this project uses tabular explainability only.
 
-## Layout
-`app.py`, `pages/` (UI only) · `src/` (all logic, no UI imports except `src/ui.py`) · `tests/` · `docs/`.
-See docs/ARCHITECTURE.md, METHODOLOGY.md, SECURITY.md, TESTING.md.
+## Deployment
 
-## Limitations
-Small data → noisy metrics; calibration/intervals are withheld when data is too small; attributions are not causal; drift ≠ accuracy loss; no fairness metrics; uploads are processed in memory only; free-tier hosting has memory/CPU limits (unmeasured).
+The repository is [Anstripathi/trustlens-ai](https://github.com/Anstripathi/trustlens-ai). After committing and pushing the verified changes, deploy `app.py` from the `main` branch through Streamlit Community Cloud using Python 3.11 and the repository's `requirements.txt`. This workspace's Milestone 2 changes have not been pushed or deployed.
+
+## Project layout
+
+- `app.py`: executive overview.
+- `pages/`: five Streamlit modules.
+- `src/`: validation, training, evaluation, explanation, optimization, calibration, uncertainty, and UI-state logic.
+- `tests/`: seeded unit and Streamlit AppTest coverage.
+- `docs/`: architecture, methodology, security, and testing notes.
+
+See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for module boundaries and [docs/SECURITY.md](./docs/SECURITY.md) for upload protections and known limits.

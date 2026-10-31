@@ -36,7 +36,12 @@ def test_calibration_unavailable_cases():
     reg = train_model(reg_df(), TrainConfig("y", "regression", "Linear Regression"))
     assert not assess_calibration(reg)["available"]
     df = clf_df(n=1000); df["y"] = np.random.default_rng(0).choice(["a", "b", "c"], len(df))
-    assert "binary" in assess_calibration(train_model(df, TrainConfig("y", "classification", "Decision Tree")))["reason"]
+    multi = assess_calibration(train_model(df, TrainConfig("y", "classification", "Decision Tree")))
+    assert multi["available"] and multi["n_cal"] > 0
+    assert {"brier", "ece"} <= set(multi["calibrated"])
+    assert multi["reliability_calibrated"]["count"].sum() > 0
+    p = multi["calibrator"].transform(np.array([[0.2, 0.3, 0.5], [0.8, 0.1, 0.1]]))
+    assert np.allclose(p.sum(axis=1), 1.0) and np.all((p >= 0) & (p <= 1))
 
 
 def test_confidence_threshold():
@@ -64,9 +69,13 @@ def test_conformal_refuses_when_too_few_cal_rows_or_classification():
     assert not conformal_intervals(c)["available"]
 
 
-def test_ood_flags_extreme_inputs_and_rate_is_controlled():
+def test_ood_flags_extreme_inputs_and_rate_is_controlled(monkeypatch):
     r = train_model(reg_df(n=1500), TrainConfig("y", "regression", "Random Forest"))
+    import src.uncertainty as uncertainty
+    monkeypatch.setattr(uncertainty, "MAX_OOD_FIT_ROWS", 100)
+    monkeypatch.setattr(uncertainty, "MAX_OOD_CAL_ROWS", 100)
     det = fit_ood(r, 0.05)
+    assert det.n_fit_ == min(100, len(r.X_fit)) and det.n_cal_ == min(100, len(r.X_cal))
     normal = det.score(r.X_test).is_out_of_distribution.mean()
     far = r.X_test.copy(); far["a"] = 50.0
     assert normal < 0.15 and det.score(far).is_out_of_distribution.mean() > 0.9
