@@ -30,7 +30,7 @@ The app uses local Python packages only. It does not transmit datasets to extern
 
 ## Deployment
 
-The repository is [Anstripathi/trustlens-ai](https://github.com/Anstripathi/trustlens-ai). After committing and pushing the verified changes, deploy `app.py` from the `main` branch through Streamlit Community Cloud using Python 3.11 and the repository's `requirements.txt`. This workspace's Milestone 2 changes have not been pushed or deployed.
+The verified Milestone 1 and 2 changes are on the repository's `main` branch. To deploy or redeploy, select `app.py` from `main` in Streamlit Community Cloud, use Python 3.11, and install dependencies from `requirements.txt`. Confirm the deployment health and exercise all five pages after deployment.
 
 ## Project layout
 
