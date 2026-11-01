@@ -11,4 +11,4 @@ Nothing is bundled. Datasets are never committed (see `.gitignore`).
 - `fnlwgt` is a census sampling weight and `education`/`education-num` are redundant encodings of each other; consider excluding them.
 
 ## Synthetic data
-- "Demo classification" (`src/datasets.py`) and "Student marks" (`src/student_demo.py`) are generated with fixed seeds. They are **synthetic**, labelled as such in the UI, and not real records.
+- "Demo classification" (`src/datasets.py`) is generated with a fixed seed. It is **synthetic**, labelled as such in the UI, and not real records.

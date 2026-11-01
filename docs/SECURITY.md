@@ -24,6 +24,8 @@ Findings identify their detector type/strength and are marked **Not reviewed**. 
 
 The project has not been penetration-tested or independently audited. Session isolation relies on Streamlit's per-session state. The local scanners do not cover every language, jurisdiction, encoding, or attack pattern. Dependency ranges are not fully pinned, and supply-chain risk remains. App testing does not establish deployment or browser security.
 
+The AI Firewall adds deterministic policy decisions and optional process-local rate limiting. Its test-console approval queue is session-local and reviewer labels are not authenticated identities; it does not authorize access to a protected system. Callers must enforce `BLOCK`, `REDACT`, and `APPROVAL_REQUIRED` outcomes and avoid logging `output_text`. See [FIREWALL.md](./FIREWALL.md) for the callable contract and limitations.
+
 ## Model Auditor privacy
 
 The auditor reuses local scanners but omits all source excerpts from consolidated findings, including otherwise masked prompt/output excerpts. Prompt and output text is not placed in audit results or exported reports. Dataset scan evidence contains source type and detector metadata rather than cell values. JSON/CSV exports are generated in memory and exclude raw dataset rows and class labels; aggregate statistics and selected feature names may still be sensitive in some contexts and should be reviewed before sharing. See `docs/AUDITOR.md` for report fields, risk methodology, and execution bounds.

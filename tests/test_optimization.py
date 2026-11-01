@@ -49,3 +49,17 @@ def test_optimization_rejects_unsupported_task():
     result = train_model(reg_df(), TrainConfig("y", "regression", "Linear Regression"))
     with pytest.raises(ValidationError, match="Unsupported task"):
         optimize_model(replace(result, task="unsupported"), search_budget=2, cv_folds=2)
+
+
+def test_bounded_grid_search_uses_fit_rows_and_respects_budget():
+    result = train_model(clf_df(), TrainConfig("y", "classification", "Decision Tree", seed=5))
+    optimized = optimize_model(result, search_budget=2, cv_folds=2, search_method="grid")
+    assert optimized["search_method"] == "grid"
+    assert optimized["search_budget"] == 2
+    assert optimized["result"].X_test.equals(result.X_test)
+
+
+def test_search_method_is_validated():
+    result = train_model(clf_df(), TrainConfig("y", "classification", "Decision Tree"))
+    with pytest.raises(ValidationError, match="Search method"):
+        optimize_model(result, search_method="unbounded")

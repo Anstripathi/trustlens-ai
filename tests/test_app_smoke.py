@@ -5,8 +5,13 @@ from pathlib import Path
 pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
-PAGES = ["app.py", "pages/1_Data_Explorer.py", "pages/3_Student_Marks_Demo.py",
-         "pages/6_AI_Security.py", "pages/7_Model_Auditor.py"]
+PAGES = ["app.py", "pages/1_Data_Explorer.py", "pages/6_AI_Security.py", "pages/7_Model_Auditor.py"]
+PAGES.append("pages/8_AI_Firewall.py")
+PAGES.append("pages/9_Model_Monitoring.py")
+PAGES.append("pages/10_Advanced_Model_Intelligence.py")
+PAGES.append("pages/11_Governance_Center.py")
+PAGES.append("pages/12_LLM_RAG_Evaluation.py")
+PAGES.append("pages/13_Governance_Control_Center.py")
 
 
 @pytest.mark.parametrize("page", PAGES)
@@ -32,6 +37,21 @@ def test_demo_dataset_then_model_lab_trains():
     ml.selectbox[0].select("churned").run()
     ml.button[0].click().run()
     assert not ml.exception and "result" in ml.session_state
+
+
+def test_model_lab_still_trains_regression():
+    from helpers import reg_df
+    from src.artifact_manager import dataset_fingerprint
+
+    frame = reg_df()
+    ml = AppTest.from_file(Path(__file__).resolve().parents[1] / "pages/2_Model_Lab.py", default_timeout=120)
+    ml.session_state["df"] = frame
+    ml.session_state["df_fp"] = dataset_fingerprint(frame)
+    ml.run()
+    ml.radio[0].set_value("regression")
+    ml.button[0].click().run()
+    assert not ml.exception
+    assert ml.session_state["result"].task == "regression"
 
 
 @pytest.mark.parametrize("page", ["pages/2_Model_Lab.py", "pages/4_Explainability.py", "pages/5_Reliability_Monitor.py"])

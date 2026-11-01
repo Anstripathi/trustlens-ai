@@ -7,7 +7,7 @@ from time import perf_counter
 import numpy as np
 from sklearn.base import clone
 from sklearn.metrics import f1_score, make_scorer
-from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, KFold
+from sklearn.model_selection import GridSearchCV, ParameterGrid, RandomizedSearchCV, StratifiedKFold, KFold
 
 from . import config
 from .data_validation import ValidationError
@@ -42,7 +42,7 @@ def _complexity(estimator):
     return None, "unavailable"
 
 
-def optimize_model(result, search_budget: int = 10, cv_folds: int = 3) -> dict:
+def optimize_model(result, search_budget: int = 10, cv_folds: int = 3, search_method: str = "randomized") -> dict:
     """Search model parameters using only fit rows, then score on calibration rows.
 
     The returned optimized TrainResult retains the original untouched test split.
@@ -52,6 +52,8 @@ def optimize_model(result, search_budget: int = 10, cv_folds: int = 3) -> dict:
         raise ValidationError(f"Search budget must be between 1 and {MAX_SEARCH_BUDGET} iterations.")
     if isinstance(cv_folds, bool) or not isinstance(cv_folds, int) or not 2 <= cv_folds <= MAX_CV_FOLDS:
         raise ValidationError(f"Cross-validation folds must be between 2 and {MAX_CV_FOLDS}.")
+    if search_method not in ("randomized", "grid"):
+        raise ValidationError("Search method must be randomized or grid.")
     if result.task == "classification":
         class_counts = result.y_fit.value_counts()
         if len(class_counts) < 2 or class_counts.min() < cv_folds:
@@ -68,11 +70,22 @@ def optimize_model(result, search_budget: int = 10, cv_folds: int = 3) -> dict:
         raise ValidationError(f"Unsupported task: {result.task!r}.")
 
     started = perf_counter()
-    search = RandomizedSearchCV(
-        clone(result.pipeline), _search_space(result), n_iter=search_budget,
-        scoring=scoring, cv=cv, refit=True, n_jobs=1,
-        random_state=result.config.seed, error_score="raise", return_train_score=False,
-    )
+    if search_method == "grid":
+        # Bound the cartesian grid deterministically; no unbounded grid can be requested.
+        all_candidates = list(ParameterGrid(_search_space(result)))
+        indices = np.linspace(0, len(all_candidates) - 1,
+                              num=min(search_budget, len(all_candidates)), dtype=int)
+        candidates = [{name: [value] for name, value in all_candidates[index].items()} for index in indices]
+        search = GridSearchCV(
+            clone(result.pipeline), candidates, scoring=scoring, cv=cv, refit=True,
+            n_jobs=1, error_score="raise", return_train_score=False,
+        )
+    else:
+        search = RandomizedSearchCV(
+            clone(result.pipeline), _search_space(result), n_iter=search_budget,
+            scoring=scoring, cv=cv, refit=True, n_jobs=1,
+            random_state=result.config.seed, error_score="raise", return_train_score=False,
+        )
     try:
         # The preprocessing pipeline is cloned and fit inside each CV fold.
         search.fit(result.X_fit, result.y_fit)
@@ -97,6 +110,7 @@ def optimize_model(result, search_budget: int = 10, cv_folds: int = 3) -> dict:
         "cv_score": float(search.best_score_),
         "cv_scoring": scoring,
         "search_budget": search_budget,
+        "search_method": search_method,
         "cv_folds": cv_folds,
         "fit_seconds": fit_seconds,
         "predict_ms_per_row": predict_ms_per_row,

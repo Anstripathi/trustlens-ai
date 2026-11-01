@@ -91,6 +91,8 @@ else:
     opt_cols = st.columns(2)
     search_budget = opt_cols[0].slider("Search iterations", 1, MAX_SEARCH_BUDGET, 10, key="search_budget")
     cv_folds = opt_cols[1].slider("Cross-validation folds", 2, MAX_CV_FOLDS, 3, key="search_cv_folds")
+    search_method = st.radio("Search strategy", ["randomized", "grid"], horizontal=True,
+                             help="Both strategies are capped by the selected iteration budget and use fit rows only.")
     source_identity = (id(res), st.session_state.get("df_fp"))
     if st.session_state.get("optimization_identity") != source_identity:
         st.session_state.pop("optimization_result", None)
@@ -98,7 +100,8 @@ else:
     if st.button("Run bounded search", key="run_optimization"):
         try:
             with st.spinner(f"Searching up to {search_budget} parameter settings across {cv_folds} folds..."):
-                result = optimize_model(res, search_budget=search_budget, cv_folds=cv_folds)
+                result = optimize_model(res, search_budget=search_budget, cv_folds=cv_folds,
+                                        search_method=search_method)
             st.session_state["optimization_result"] = result
             st.session_state["optimization_identity"] = source_identity
         except Exception as e:  # noqa: BLE001
@@ -107,6 +110,7 @@ else:
     optimization = st.session_state.get("optimization_result")
     if optimization is not None and st.session_state.get("optimization_identity") == source_identity:
         st.write("Best parameters:", optimization["best_params"])
+        st.caption(f"Search strategy: {optimization['search_method']}")
         st.caption(f"CV score ({optimization['cv_scoring']}): {optimization['cv_score']:.4f} Â· "
                    f"fit {optimization['fit_seconds']:.2f}s Â· prediction {optimization['predict_ms_per_row']:.3f} ms/row Â· "
                    f"complexity {optimization['complexity']} {optimization['complexity_unit']}")
